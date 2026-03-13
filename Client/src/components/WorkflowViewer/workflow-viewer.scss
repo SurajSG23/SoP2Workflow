@@ -1,0 +1,36 @@
+@use "../../styles/variables" as *;
+
+.card {
+  background: $background-white;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  box-shadow: $surface-shadow;
+}
+
+.workflow-viewer {
+  padding: $space-4;
+}
+
+.workflow-viewer h2 {
+  margin-bottom: $space-3;
+  font-size: 1rem;
+}
+
+.workflow-viewer__placeholder {
+  color: $muted-text;
+}
+
+.workflow-viewer__error {
+  margin-top: $space-2;
+  color: #c62828;
+}
+
+.workflow-viewer__canvas {
+  margin-top: $space-3;
+  border: 1px solid $border-color;
+  border-radius: $radius-sm;
+  padding: $space-3;
+  overflow-x: auto;
+  min-height: 220px;
+  background: #fcfefc;
+}

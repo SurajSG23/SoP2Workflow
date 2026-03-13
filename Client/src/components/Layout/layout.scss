@@ -1,0 +1,41 @@
+@use "../../styles/variables" as *;
+
+.app-shell {
+  min-height: 100vh;
+  background-color: $background-white;
+}
+
+.app-header {
+  border-bottom: 1px solid $border-color;
+  background: $background-white;
+}
+
+.app-header__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: $space-3 $space-4;
+}
+
+.app-header__inner h1 {
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
+.app-main {
+  padding: $space-4;
+}
+
+.app-main__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: $space-3;
+  }
+
+  .app-header__inner {
+    padding: $space-3;
+  }
+}

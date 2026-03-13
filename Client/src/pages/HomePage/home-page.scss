@@ -1,0 +1,24 @@
+@use "../../styles/variables" as *;
+
+.home-page {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: $space-4;
+}
+
+.home-page__left {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+}
+
+.home-page__error {
+  color: #c62828;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1024px) {
+  .home-page {
+    grid-template-columns: 1fr;
+  }
+}
