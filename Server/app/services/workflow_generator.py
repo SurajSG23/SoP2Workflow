@@ -1,86 +1,63 @@
 from __future__ import annotations
 
-import json
 import logging
+import re
 
-from app.models.workflow_schema import WorkflowData, WorkflowStep
 from app.services.llm_client import call_llm
 
 logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = """You are an expert at analyzing Standard Operating Procedure (SOP) documents.
-
-Extract the key workflow steps from the provided SOP text as a sequential list of actions.
-
+_SYSTEM_PROMPT = """You are an expert in business process modeling (BPMN).
+Task: Convert this guide that contains user actions performed into an accurate workflow diagram.
+Follow this process:
+STEP 1 — Extract workflow steps
+Return a numbered list of atomic actions.
+STEP 2 — Identify decision points
+Mark steps that contain conditional logic.
+STEP 3 — Determine step transitions
+Determine the next step for each action.
+STEP 4 — Create workflow structure
+Represent the workflow using nodes and edges.
+STEP 5 — Generate Mermaid diagram.
 Rules:
-1. Each step must be a clear, concise action phrase (5-15 words).
-2. Steps must be sequential and actionable — what the user must do.
-3. Extract between 4 and 12 steps.
-4. Focus on the actions, not headers, footers, or metadata.
-5. If image context is provided, use it to enrich or clarify the steps.
-
-Respond ONLY in JSON format:
-{"steps": ["<action 1>", "<action 2>", ...]}"""
+- Start with "Start"
+- End with "End"
+- Use [] for actions
+- Use {} for decisions
+- Label decision edges Yes/No
+- Preserve loops if present
+Return ONLY valid Mermaid syntax that gets rendered in mermaid editor."""
 
 
 class WorkflowGeneratorService:
-    def generate(self, text: str, image_descriptions: list[str]) -> WorkflowData:
-        steps = self._extract_steps_via_llm(text, image_descriptions)
-
-        if not steps:
-            steps = self._extract_steps_fallback(text)
-
-        if not steps:
-            steps = [
-                "Open SOP document",
-                "Review process instructions",
-                "Execute process in target system",
-                "Validate and complete task",
-            ]
-
-        workflow_steps = [
-            WorkflowStep(id=self._index_to_node_id(i), action=step)
-            for i, step in enumerate(steps)
-        ]
-        return WorkflowData(steps=workflow_steps)
-
-    def _extract_steps_via_llm(self, text: str, image_descriptions: list[str]) -> list[str]:
-        if not text.strip() and not image_descriptions:
-            return []
-
-        user_content = f"SOP Text:\n{text[:6000]}"
-        if image_descriptions:
-            image_context = "\n".join(
-                f"Image {i + 1}: {desc}" for i, desc in enumerate(image_descriptions[:6])
-            )
-            user_content += f"\n\nImage Context:\n{image_context}"
-
+    def generate(self, text: str) -> str:
         messages = [
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": user_content},
+            {"role": "user", "content": text},
         ]
 
-        try:
-            result = call_llm(messages)
-            if result:
-                parsed = json.loads(result)
-                steps = parsed.get("steps", [])
-                if isinstance(steps, list) and steps:
-                    return [str(s).strip() for s in steps if str(s).strip()][:12]
-        except Exception as exc:
-            logger.error("LLM step extraction failed: %s", exc)
+        result = call_llm(messages, temperature=0.2, json_mode=False)
 
-        return []
+        if result:
+            return self._clean_mermaid(result)
 
-    def _extract_steps_fallback(self, text: str) -> list[str]:
-        import re
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        normalized = [re.sub(r"^\d+[\).\-\s]+", "", line).strip() for line in lines]
-        return [line for line in normalized if len(line) >= 8 and len(line.split()) >= 2][:12]
+        logger.warning("LLM unavailable — returning fallback diagram.")
+        return self._fallback_diagram()
 
     @staticmethod
-    def _index_to_node_id(index: int) -> str:
-        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        if index < len(alphabet):
-            return alphabet[index]
-        return f"N{index + 1}"
+    def _clean_mermaid(raw: str) -> str:
+        """Strip markdown code fences if the model wrapped the output."""
+        raw = raw.strip()
+        # Remove ```mermaid ... ``` or ``` ... ``` wrappers
+        raw = re.sub(r"^```(?:mermaid)?\s*", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"\s*```$", "", raw)
+        return raw.strip()
+
+    @staticmethod
+    def _fallback_diagram() -> str:
+        return (
+            "flowchart TD\n"
+            "    Start([Start]) --> A[Upload SOP document]\n"
+            "    A --> B[LLM unavailable — configure GENAI_URL and MODEL_NAME in .env]\n"
+            "    B --> End([End])"
+        )

@@ -9,7 +9,6 @@ interface ProcessingStatusProps {
 const STAGES: ProcessingStage[] = [
   "Uploading document",
   "Parsing document",
-  "Analyzing screenshots",
   "Generating workflow",
   "Rendering diagram",
 ];

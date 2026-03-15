@@ -9,7 +9,6 @@ import "./home-page.scss";
 const STAGES: ProcessingStage[] = [
   "Uploading document",
   "Parsing document",
-  "Analyzing screenshots",
   "Generating workflow",
   "Rendering diagram",
 ];
