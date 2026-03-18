@@ -1,4 +1,4 @@
 #SOP TO WORKFLOW
 
-Frontend: React 
+Frontend: React \
 Backend: Python
